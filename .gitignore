@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+dist-ssr/
+.vite/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Uploads (user data - keep dir but ignore files)
+uploads/*
+!uploads/.gitkeep
+
+# Playwright
+.playwright/
+playwright-report/
+test-results/
+
+# OS
+.DS_Store
+*.local
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Backup
+*.bak
