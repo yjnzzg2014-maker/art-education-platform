@@ -79,7 +79,8 @@ router.get('/school/:id', authMiddleware, async (req, res) => {
         SUM(CASE WHEN grade = 'B' THEN 1 ELSE 0 END) as gradeB,
         SUM(CASE WHEN grade = 'C' THEN 1 ELSE 0 END) as gradeC,
         SUM(CASE WHEN grade = 'D' THEN 1 ELSE 0 END) as gradeD,
-        AVG(total_score) as avgScore
+        AVG(total_score) as avgScore,
+        SUM(CASE WHEN is_anomaly = 1 THEN 1 ELSE 0 END) as anomalyCount
       FROM artworks a
       JOIN students s ON a.student_id = s.id
       WHERE s.class_id IN (${placeholders})
@@ -150,13 +151,24 @@ router.get('/grade/:id/breakdown', authMiddleware, async (req, res) => {
 // 获取教师可选班级列表
 router.get('/classes', authMiddleware, async (req, res) => {
   try {
-    const classes = await dbAll(`
-      SELECT c.id, c.name as class_name, g.name as grade_name
-      FROM classes c
-      JOIN grades g ON c.grade_id = g.id
-      WHERE c.teacher_id = ? OR ? = 'admin'
-      ORDER BY g.name, c.name
-    `, [req.user.id, req.user.role])
+    let classes
+    if (req.user.role === 'admin') {
+      classes = await dbAll(`
+        SELECT c.id, c.name as class_name, g.name as grade_name
+        FROM classes c
+        JOIN grades g ON c.grade_id = g.id
+        ORDER BY g.name, c.name
+      `)
+    } else {
+      classes = await dbAll(`
+        SELECT c.id, c.name as class_name, g.name as grade_name
+        FROM classes c
+        JOIN grades g ON c.grade_id = g.id
+        JOIN teacher_classes tc ON tc.class_id = c.id
+        WHERE tc.teacher_id = ?
+        ORDER BY g.name, c.name
+      `, [req.user.id])
+    }
     res.json(classes)
   } catch (err) {
     console.error('Error fetching classes:', err)

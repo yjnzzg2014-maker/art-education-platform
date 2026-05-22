@@ -15,5 +15,6 @@ export function resolveImagePath(imageUrl) {
   if (imageUrl.startsWith('/images/')) {
     return path.join(PROJECT_ROOT, 'public', imageUrl)
   }
-  return null
+  // Fallback: treat as relative path under uploads (e.g. "一年级1班/我眼中的春天/pic.png")
+  return path.join(PROJECT_ROOT, 'uploads', imageUrl)
 }

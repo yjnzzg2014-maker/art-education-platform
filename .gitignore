@@ -18,6 +18,16 @@ npm-debug.log*
 # Uploads (user data - keep dir but ignore files)
 uploads/*
 !uploads/.gitkeep
+server/uploads/
+
+# Database (SQLite) - 本地数据库不入仓库
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+server/artedu.db*
+server/database.sqlite
 
 # Playwright
 .playwright/
@@ -36,3 +46,27 @@ test-results/
 
 # Backup
 *.bak
+*.bak.*
+
+# Demo / mock 脚本与迁移（本地演示用，不入仓库）
+scripts/demo_*.js
+scripts/seed_mock_data.js
+scripts/generate-artworks.mjs
+scripts/.demo_seed_*.json
+server/migrations/010_mock_data.js
+server/migrations/011_seed_artwork_history.js
+server/migrations/012_admin_dashboard_mock.js
+server/migrations/013_research_topics.js
+server/migrations/.demo_seed_*.json
+
+# 演示资源（图片、幻灯片）
+public/images/student-history/
+public/images/spring/*
+!public/images/spring/.gitkeep
+public/images/1班/
+public/images/一年级1班/
+slides/
+
+# 演示录制相关（本地）
+docs/演示录制前置.md
+.playwright-mcp/

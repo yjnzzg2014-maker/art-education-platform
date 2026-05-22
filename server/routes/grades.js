@@ -20,12 +20,17 @@ router.get('/', authMiddleware, async (req, res) => {
 
     if (req.query.withClasses === '1') {
       const classes = await dbAll(`
-        SELECT c.*, u.name as teacher_name,
+        SELECT c.*,
+          (SELECT GROUP_CONCAT(u.name, '、') FROM teacher_classes tc JOIN users u ON tc.teacher_id = u.id WHERE tc.class_id = c.id) as teacher_names,
+          (SELECT GROUP_CONCAT(tc.teacher_id) FROM teacher_classes tc WHERE tc.class_id = c.id) as teacher_ids,
           (SELECT COUNT(*) FROM students s WHERE s.class_id = c.id) as student_count
         FROM classes c
-        LEFT JOIN users u ON c.teacher_id = u.id
         ORDER BY c.name
       `)
+      // Parse teacher_ids from comma-separated string
+      classes.forEach(cls => {
+        cls.teacher_ids = cls.teacher_ids ? cls.teacher_ids.split(',').map(Number) : []
+      })
       const classesByGrade = {}
       for (const cls of classes) {
         if (!classesByGrade[cls.grade_id]) classesByGrade[cls.grade_id] = []
@@ -52,11 +57,16 @@ router.get('/:id', authMiddleware, async (req, res) => {
     )
     if (!grade) return res.status(404).json({ error: 'Grade not found' })
     const classes = await dbAll(
-      `SELECT c.*, u.name as teacher_name FROM classes c
-       LEFT JOIN users u ON c.teacher_id = u.id
+      `SELECT c.*,
+        (SELECT GROUP_CONCAT(u.name, '、') FROM teacher_classes tc JOIN users u ON tc.teacher_id = u.id WHERE tc.class_id = c.id) as teacher_names,
+        (SELECT GROUP_CONCAT(tc.teacher_id) FROM teacher_classes tc WHERE tc.class_id = c.id) as teacher_ids
+       FROM classes c
        WHERE c.grade_id = ? ORDER BY c.name`,
       [req.params.id]
     )
+    classes.forEach(cls => {
+      cls.teacher_ids = cls.teacher_ids ? cls.teacher_ids.split(',').map(Number) : []
+    })
     res.json({ ...grade, classes })
   } catch (err) {
     console.error('Error fetching grade:', err)

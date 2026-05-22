@@ -39,9 +39,9 @@ export default function ArtworkDetail({ artwork, onClose, onReview }) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <div className="p-3 bg-red-50 border-b border-red-100 flex justify-between items-center">
-        <span className="font-semibold text-red-800">作品详情 · <MaskName name={artwork.student_name} /></span>
-        {artwork.is_anomaly && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded">异常 · 待教师释义</span>}
+      <div className="p-3 bg-amber-50 border-b border-amber-100 flex justify-between items-center">
+        <span className="font-semibold text-amber-800">作品详情 · <MaskName name={artwork.student_name} /></span>
+        {artwork.is_anomaly && <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded">值得关注 · 待释义</span>}
       </div>
 
       <div className="p-4">

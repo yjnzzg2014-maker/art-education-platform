@@ -6,4 +6,6 @@ export const classesApi = {
   create: (data) => client.post('/classes', data),
   update: (id, data) => client.put(`/classes/${id}`, data),
   remove: (id) => client.delete(`/classes/${id}`),
+  teachingSuggestion: (id, { refresh = false, windowSize } = {}) =>
+    client.get(`/classes/${id}/teaching-suggestion`, { params: { refresh: refresh || undefined, windowSize } }),
 }

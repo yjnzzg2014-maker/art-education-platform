@@ -21,11 +21,16 @@ const reviewSchema = z.object({
 
 const router = Router()
 
-// Rewrite /uploads/ paths to /api/upload/ for protected access
-const rewriteUploadUrl = (artwork) => ({
-  ...artwork,
-  image_url: artwork.image_url ? artwork.image_url.replace('/uploads/', '/api/upload/') : null
-})
+// Rewrite image paths to /api/upload/ for protected access.
+// 已经以 / 或 http(s):// 开头的视为绝对/外部路径，不再二次前缀。
+const rewriteUploadUrl = (artwork) => {
+  const url = artwork.image_url
+  if (!url) return { ...artwork, image_url: null }
+  if (url.startsWith('/') || url.startsWith('http://') || url.startsWith('https://')) {
+    return { ...artwork, image_url: url }
+  }
+  return { ...artwork, image_url: `/api/upload/${url}` }
+}
 
 // 获取任务下作品列表
 router.get('/', authMiddleware, async (req, res) => {
@@ -40,9 +45,9 @@ router.get('/', authMiddleware, async (req, res) => {
       SELECT a.*, s.name as student_name, s.student_no
       FROM artworks a
       JOIN students s ON a.student_id = s.id
-      WHERE (a.task_id = ? OR (a.task_id IS NULL AND s.class_id = ?))
+      WHERE a.task_id = ?
     `
-    const params = [taskId, task.class_id]
+    const params = [taskId]
 
     if (is_anomaly !== undefined) {
       sql += ' AND a.is_anomaly = ?'
@@ -94,12 +99,14 @@ router.get('/reviews', authMiddleware, async (req, res) => {
     let sql = `
       SELECT r.*, u.name as teacher_name,
         a.title as artwork_title, a.image_url, a.grade as artwork_grade,
-        s.name as student_name, c.name as class_name
+        s.name as student_name, c.name as class_name,
+        t.theme as task_theme
       FROM teacher_reviews r
       JOIN users u ON r.teacher_id = u.id
       JOIN artworks a ON r.artwork_id = a.id
       JOIN students s ON a.student_id = s.id
       JOIN classes c ON s.class_id = c.id
+      LEFT JOIN analysis_tasks t ON a.task_id = t.id
       WHERE 1=1
     `
     const params = []
@@ -117,7 +124,7 @@ router.get('/reviews', authMiddleware, async (req, res) => {
     sql += ' ORDER BY r.created_at DESC'
 
     const reviews = await dbAll(sql, params)
-    res.json(reviews)
+    res.json(reviews.map(r => rewriteUploadUrl(r)))
   } catch (err) {
     console.error('Error fetching reviews:', err)
     res.status(500).json({ error: 'Internal error' })

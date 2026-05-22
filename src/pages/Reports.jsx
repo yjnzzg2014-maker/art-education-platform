@@ -192,7 +192,7 @@ export default function Reports() {
             <StatCard label="班级数" value={gradeBreakdown.length} unit="个" />
             <StatCard label="学生总数" value={gradeBreakdown.reduce((s, c) => s + (c.studentCount || 0), 0)} unit="人" />
             <StatCard label="作品总数" value={gradeBreakdown.reduce((s, c) => s + (c.artworkCount || 0), 0)} unit="幅" />
-            <StatCard label="异常作品" value={gradeBreakdown.reduce((s, c) => s + (c.anomalyCount || 0), 0)} unit="幅" trend="需复核" trendType="warn" />
+            <StatCard label="关注作品" value={gradeBreakdown.reduce((s, c) => s + (c.anomalyCount || 0), 0)} unit="幅" trend="需释义" trendType="warn" />
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg">
@@ -248,7 +248,7 @@ export default function Reports() {
             <StatCard label="作品总数" value={classStats.total || 0} unit="幅" />
             <StatCard label="平均评级" value={getGradeLetter(classStats.avgScore || 0)} unit={`（${Math.round(classStats.avgScore || 0)}）`} />
             <StatCard label="A级作品" value={classStats.gradeA || 0} unit="幅" trend={`${classStats.total ? Math.round(classStats.gradeA / classStats.total * 100) : 0}%`} trendType="up" />
-            <StatCard label="异常作品" value={classStats.anomalyCount || 0} unit="幅" trend="需复核" trendType="warn" />
+            <StatCard label="关注作品" value={classStats.anomalyCount || 0} unit="幅" trend="需释义" trendType="warn" />
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-6">

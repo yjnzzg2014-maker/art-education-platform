@@ -143,8 +143,8 @@ export default function Classes() {
                         {cls.name.charAt(0)}
                       </span>
                       <span className="text-sm text-gray-700">{cls.name}</span>
-                      {cls.teacher_name && (
-                        <span className="text-xs text-gray-400">班主任: {cls.teacher_name}</span>
+                      {cls.teacher_names && (
+                        <span className="text-xs text-gray-400">负责: {cls.teacher_names}</span>
                       )}
                       <span className="text-xs text-gray-300">·</span>
                       <span className="text-xs text-gray-400">{cls.student_count || 0} 人</span>
@@ -200,19 +200,28 @@ export default function Classes() {
 function Modal({ open, type, mode, data, gradeId, teachers, grades, onClose, onSaved }) {
   const [form, setForm] = useState(type === 'grade'
     ? { name: data?.name || '' }
-    : { name: data?.name || '', grade_id: data?.grade_id || gradeId || '', teacher_id: data?.teacher_id || '' }
+    : { name: data?.name || '', grade_id: data?.grade_id || gradeId || '', teacher_ids: data?.teacher_ids || [] }
   )
   const [submitting, setSubmitting] = useState(false)
   const showToast = useToastStore(s => s.show)
 
   useEffect(() => {
     if (type === 'grade') setForm({ name: data?.name || '' })
-    else setForm({ name: data?.name || '', grade_id: data?.grade_id || gradeId || '', teacher_id: data?.teacher_id || '' })
+    else setForm({ name: data?.name || '', grade_id: data?.grade_id || gradeId || '', teacher_ids: data?.teacher_ids || [] })
   }, [data, gradeId])
 
   if (!open) return null
 
   const update = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }))
+
+  const toggleTeacher = (id) => {
+    setForm(prev => {
+      const ids = prev.teacher_ids.includes(id)
+        ? prev.teacher_ids.filter(t => t !== id)
+        : [...prev.teacher_ids, id]
+      return { ...prev, teacher_ids: ids }
+    })
+  }
 
   const submit = async (e) => {
     e.preventDefault()
@@ -223,7 +232,7 @@ function Modal({ open, type, mode, data, gradeId, teachers, grades, onClose, onS
     try {
       const payload = type === 'grade'
         ? { name: form.name.trim() }
-        : { name: form.name.trim(), grade_id: Number(form.grade_id), teacher_id: form.teacher_id ? Number(form.teacher_id) : null }
+        : { name: form.name.trim(), grade_id: Number(form.grade_id), teacher_ids: form.teacher_ids }
 
       if (mode === 'edit') {
         await (type === 'grade' ? gradesApi : classesApi).update(data.id, payload)
@@ -245,7 +254,7 @@ function Modal({ open, type, mode, data, gradeId, teachers, grades, onClose, onS
       <div
         role="dialog"
         aria-modal="true"
-        className="bg-white rounded-xl shadow-xl w-[420px] max-w-[90vw] p-6"
+        className="bg-white rounded-xl shadow-xl w-[480px] max-w-[90vw] p-6"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold mb-4">
@@ -287,17 +296,29 @@ function Modal({ open, type, mode, data, gradeId, teachers, grades, onClose, onS
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </Field>
-              <Field label="班主任">
-                <select
-                  value={form.teacher_id}
-                  onChange={update('teacher_id')}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">不指定</option>
+              <Field label="负责教师">
+                <div className="border border-gray-200 rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
+                  {teachers.length === 0 && (
+                    <div className="text-sm text-gray-400">暂无教师</div>
+                  )}
                   {teachers.map(t => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.role === 'admin' ? '管理员' : '教师'})</option>
+                    <label key={t.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 py-1">
+                      <input
+                        type="checkbox"
+                        checked={form.teacher_ids.includes(t.id)}
+                        onChange={() => toggleTeacher(t.id)}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">{t.name}</span>
+                      <span className="text-xs text-gray-400">({t.role === 'admin' ? '管理员' : '教师'})</span>
+                    </label>
                   ))}
-                </select>
+                </div>
+                {form.teacher_ids.length > 0 && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    已选 {form.teacher_ids.length} 位教师
+                  </div>
+                )}
               </Field>
             </>
           )}

@@ -7,7 +7,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import authRoutes from './routes/auth.js'
-import tasksRoutes from './routes/tasks.js'
+import tasksRoutes, { recoverOrphanedTasks } from './routes/tasks.js'
 import artworksRoutes from './routes/artworks.js'
 import studentsRoutes from './routes/students.js'
 import gradesRoutes from './routes/grades.js'
@@ -16,6 +16,8 @@ import statsRoutes from './routes/stats.js'
 import uploadRoutes from './routes/upload.js'
 import settingsRoutes from './routes/settings.js'
 import usersRoutes from './routes/users.js'
+import themesRoutes from './routes/themes.js'
+import researchRoutes from './routes/research.js'
 
 import db, { initPromise, dbGet } from './db.js'
 
@@ -57,6 +59,8 @@ app.use('/api/stats', statsRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/users', usersRoutes)
+app.use('/api/themes', themesRoutes)
+app.use('/api/research', researchRoutes)
 
 // 健康检查（验证数据库连通性）
 app.get('/api/health', async (req, res) => {
@@ -86,7 +90,10 @@ if (process.env.JWT_REFRESH_SECRET.length < 32) {
 }
 
 // Wait for database initialization before listening
-initPromise.then(() => {
+initPromise.then(async () => {
+  // 回收上次进程留下的幽灵 processing/paused 任务
+  await recoverOrphanedTasks()
+
   const server = app.listen(PORT, process.env.HOST || '127.0.0.1', () => {
     console.log(`Art Education API Server running on http://${process.env.HOST || '127.0.0.1'}:${PORT}`)
   })

@@ -2,11 +2,20 @@ import jwt from 'jsonwebtoken'
 import { dbGet } from '../db.js'
 
 export function authMiddleware(req, res, next) {
+  // Try Authorization header first, fall back to cookie (for <img> tags etc.)
+  let token = null
   const auth = req.headers.authorization
-  if (!auth || !auth.startsWith('Bearer ')) {
+  if (auth && auth.startsWith('Bearer ')) {
+    token = auth.slice(7)
+  } else if (req.headers.cookie) {
+    const match = req.headers.cookie.match(/(?:^|;\s*)artedu_token=([^;]+)/)
+    if (match) token = match[1]
+  }
+
+  if (!token) {
     return res.status(401).json({ error: 'No token provided' })
   }
-  const token = auth.slice(7)
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     req.user = decoded

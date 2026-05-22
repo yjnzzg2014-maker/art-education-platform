@@ -10,6 +10,7 @@ const Analysis = lazy(() => import('./pages/Analysis'))
 const StudentProfile = lazy(() => import('./pages/StudentProfile'))
 const Research = lazy(() => import('./pages/Research'))
 const Reports = lazy(() => import('./pages/Reports'))
+const ClassReport = lazy(() => import('./pages/ClassReport'))
 const Diagnosis = lazy(() => import('./pages/Diagnosis'))
 const Students = lazy(() => import('./pages/Students'))
 const Growth = lazy(() => import('./pages/Growth'))
@@ -17,6 +18,8 @@ const Warning = lazy(() => import('./pages/Warning'))
 const Reviews = lazy(() => import('./pages/Reviews'))
 const Classes = lazy(() => import('./pages/Classes'))
 const Teachers = lazy(() => import('./pages/Teachers'))
+const StudentMgmt = lazy(() => import('./pages/StudentMgmt'))
+const Help = lazy(() => import('./pages/Help'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 function PageLoader() {
@@ -54,8 +57,11 @@ export default function App() {
               <Route path="reviews" element={<Reviews />} />
               <Route path="research" element={<Research />} />
               <Route path="reports" element={<Reports />} />
+              <Route path="class-report" element={<ClassReport />} />
               <Route path="classes" element={<Classes />} />
               <Route path="teachers" element={<Teachers />} />
+              <Route path="students-mgmt" element={<StudentMgmt />} />
+              <Route path="help" element={<Help />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

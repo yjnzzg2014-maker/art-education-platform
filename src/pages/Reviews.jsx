@@ -71,13 +71,13 @@ export default function Reviews() {
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-bold">教师释义记录</h1>
-        <p className="text-gray-500 text-sm mt-1">查看所有教师的释义复核记录</p>
+        <p className="text-gray-500 text-sm mt-1">查看所有教师的释义记录</p>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
         <StatCard label="总释义记录" value={totalReviews} unit="条" />
         <StatCard label="本月释义" value={thisMonth} unit="条" />
-        <StatCard label="Override 记录" value={overrideCount} unit="条" />
+        <StatCard label="教师覆盖参考" value={overrideCount} unit="条" />
       </div>
 
       <div className="flex items-center gap-4 mb-4">
@@ -137,7 +137,7 @@ export default function Reviews() {
                     <div className="flex flex-col items-end gap-1">
                       {review.override === 1 && (
                         <span className="px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-700">
-                          Override
+                          覆盖参考
                         </span>
                       )}
                       <span className="text-xs text-gray-400">

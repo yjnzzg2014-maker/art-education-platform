@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useEffect, useState, useRef } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import DimensionAnalysis from '../components/DimensionAnalysis'
 import MaskName from '../components/MaskName'
@@ -8,10 +8,13 @@ import ReviewModal from '../components/ReviewModal'
 import useDiagnosisData from '../hooks/useDiagnosisData'
 import { buildColorDistribution } from '../utils/analysisHelpers'
 import ColorChart from '../components/ColorChart'
+import { getAnomalyLevel } from '../components/ArtworkGrid'
 import client from '../api/client'
 
 export default function Diagnosis() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+
   const initialTaskId = searchParams.get('taskId')
   const initialArtworkId = searchParams.get('artworkId')
 
@@ -20,6 +23,7 @@ export default function Diagnosis() {
   const [analyzing, setAnalyzing] = useState(false)
   const [analyzeSource, setAnalyzeSource] = useState(null)
   const [toast, setToast] = useState(null)
+  const colRef = useRef(null)
 
   const { tasks, artworks, context, loading, selectArtwork, submitReview } = useDiagnosisData(selectedTaskId, initialArtworkId ? Number(initialArtworkId) : null)
 
@@ -29,6 +33,22 @@ export default function Diagnosis() {
     }
   }, [tasks])
 
+  // 清除右侧列中游离的 text node（如浏览器解析产生的孤立 "0"）
+  useEffect(() => {
+    const col = colRef.current
+    if (!col) return
+    const remove = () => {
+      Array.from(col.childNodes).forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() === '0') {
+          col.removeChild(node)
+        }
+      })
+    }
+    remove()
+    const timer = setTimeout(remove, 500)
+    return () => clearTimeout(timer)
+  }, [context])
+
   const artwork = context?.artwork
   const classAvg = context?.classAvg
   const studentHistory = context?.studentHistory || []
@@ -36,6 +56,7 @@ export default function Diagnosis() {
   const currentTask = tasks.find(t => t.id === selectedTaskId)
 
   const historyChartData = studentHistory
+    .filter(w => w.total_score != null && w.total_score > 0)
     .sort((a, b) => new Date(a.upload_time) - new Date(b.upload_time))
     .map(w => ({
       date: new Date(w.upload_time).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }),
@@ -94,7 +115,18 @@ export default function Diagnosis() {
           {currentTask ? `作业诊断 / ${currentTask.class_name} / ${currentTask.theme}` : '作业诊断'}
         </div>
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">单幅作品诊断</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(`/analysis${selectedTaskId ? '/' + selectedTaskId : ''}`)}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+              title="返回"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 className="text-xl font-bold">单幅作品诊断</h1>
+          </div>
           <select
             value={selectedTaskId || ''}
             onChange={(e) => setSelectedTaskId(Number(e.target.value))}
@@ -110,7 +142,9 @@ export default function Diagnosis() {
       </div>
 
       {!artwork ? (
-        <div className="text-gray-500 py-8 text-center">{loading ? '加载中...' : '请选择作品'}</div>
+        <div className="text-gray-500 py-8 text-center">
+          {loading ? '加载中...' : artworks.length === 0 ? '暂无作品' : '请选择作品'}
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-5 gap-4 mb-4" style={{ height: 'calc(100vh - 280px)' }}>
@@ -121,8 +155,14 @@ export default function Diagnosis() {
                     <h2 className="font-semibold"><MaskName name={artwork.student_name} /></h2>
                     <span className="text-xs text-gray-500">{artwork.class_name} · {artwork.student_no}</span>
                   </div>
-                  {artwork.is_anomaly ? (
-                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded">异常</span>
+                  {artwork.is_anomaly && getAnomalyLevel(artwork) === 'warn' ? (
+                    <span className="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap animate-pulse" title={`系统警告：${artwork.anomaly_reason || '需教师关注'}`}>
+                      ⚠ 需教师关注
+                    </span>
+                  ) : artwork.is_anomaly ? (
+                    <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full whitespace-nowrap" title="系统提示：这幅作品值得多看一眼">
+                      值得多看一眼
+                    </span>
                   ) : null}
                 </div>
                 <div className="bg-gray-100 rounded flex items-center justify-center" style={{ maxHeight: '500px' }}>
@@ -148,11 +188,9 @@ export default function Diagnosis() {
                   >
                     {analyzing ? 'AI 分析中...' : '重新 AI 分析'}
                   </button>
-                  {artwork.is_anomaly ? (
-                    <button onClick={() => setReviewModalOpen(true)} className="flex-1 bg-green-500 text-white py-2 rounded text-sm hover:bg-green-600">
-                      教师释义
-                    </button>
-                  ) : null}
+                  <button onClick={() => setReviewModalOpen(true)} className="flex-1 bg-green-500 text-white py-2 rounded text-sm hover:bg-green-600">
+                    {artwork.review ? '补充教师释义' : '教师释义'}
+                  </button>
                 </div>
               </div>
 
@@ -167,7 +205,7 @@ export default function Diagnosis() {
               )}
             </div>
 
-            <div className="col-span-3 flex flex-col gap-4 overflow-y-auto">
+            <div ref={colRef} className="col-span-3 flex flex-col gap-4 overflow-y-auto">
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <h3 className="font-semibold text-sm">四维分数诊断</h3>
@@ -197,20 +235,36 @@ export default function Diagnosis() {
                 </div>
               )}
 
-              {artwork.is_anomaly && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-sm text-amber-800 mb-2">异常判定</h3>
-                  <p className="text-sm text-amber-700">{artwork.anomaly_reason}</p>
-                </div>
-              )}
+              {artwork.is_anomaly && (() => {
+                const isWarn = getAnomalyLevel(artwork) === 'warn'
+                return (
+                  <div className={isWarn ? 'bg-red-50 border-2 border-red-300 rounded-lg p-4' : 'bg-amber-50 border border-amber-200 rounded-lg p-4'}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className={`font-semibold text-sm ${isWarn ? 'text-red-700' : 'text-amber-800'}`}>
+                        {isWarn ? '⚠ 系统警告 · 需教师关注' : '系统提示 · 值得多看一眼'}
+                      </h3>
+                      {isWarn && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-medium">建议优先释义</span>
+                      )}
+                    </div>
+                    <p className={`text-sm leading-relaxed ${isWarn ? 'text-red-700' : 'text-amber-700'}`}>{artwork.anomaly_reason}</p>
+                    {isWarn && !artwork.review && (
+                      <p className="mt-2 text-xs text-red-500 italic">系统识别为需要教师跟进的作品，请在与孩子沟通后写入教师释义。</p>
+                    )}
+                  </div>
+                )
+              })()}
 
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <h3 className="font-semibold text-sm mb-3">作品色彩分布</h3>
                 <ColorChart data={artworkColorDist} />
               </div>
 
-              {historyChartData.length > 1 && (
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
+              {historyChartData.length > 1 && historyChartData.some(d => d.score > 0) && (
+                <div
+                  onClick={() => navigate(`/growth?studentId=${artwork.student_id}`)}
+                  className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-400 transition-colors"
+                >
                   <h3 className="font-semibold text-sm mb-3">该学生历史分数趋势</h3>
                   <div className="h-32">
                     <ResponsiveContainer width="100%" height="100%">
@@ -238,6 +292,7 @@ export default function Diagnosis() {
         <ReviewModal
           artworkId={artwork?.id}
           studentName={artwork?.student_name}
+          initialComment={!artwork?.review ? (artwork?.review_draft || artwork?.scores?.reviewDraft || '') : ''}
           onSubmit={handleReviewSubmit}
           onClose={() => setReviewModalOpen(false)}
         />

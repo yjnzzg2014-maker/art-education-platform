@@ -23,7 +23,7 @@ router.post('/login', loginLimiter, async (req, res) => {
       return res.status(400).json({ error: '用户名或密码不能为空' })
     }
 
-    const user = await dbGet('SELECT id, username, password_hash, role, name FROM users WHERE username = ?', [username])
+    const user = await dbGet('SELECT id, username, password_hash, role, name, school_id FROM users WHERE username = ?', [username])
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       return res.status(401).json({ error: '用户名或密码错误' })
     }
@@ -40,10 +40,16 @@ router.post('/login', loginLimiter, async (req, res) => {
       { expiresIn: '7d' }
     )
 
+    res.cookie('artedu_token', accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 30 * 60 * 1000 // 30 minutes
+    })
+
     res.json({
       token: accessToken,
       refreshToken,
-      user: { id: user.id, username: user.username, role: user.role, name: user.name }
+      user: { id: user.id, username: user.username, role: user.role, name: user.name, school_id: user.school_id }
     })
   } catch (err) {
     console.error('Login error:', err)
@@ -69,6 +75,12 @@ router.post('/refresh', async (req, res) => {
       { expiresIn: '30m' }
     )
 
+    res.cookie('artedu_token', accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 30 * 60 * 1000
+    })
+
     res.json({ token: accessToken, user: { id: user.id, username: user.username, role: user.role, name: user.name } })
   } catch (err) {
     if (err.name === 'TokenExpiredError') return res.status(401).json({ error: 'Refresh token expired' })
@@ -86,6 +98,7 @@ router.post('/logout', authMiddleware, async (req, res) => {
         [decoded.jti, req.user.id]
       )
     }
+    res.clearCookie('artedu_token')
     res.json({ ok: true })
   } catch (err) {
     console.error('Logout error:', err)

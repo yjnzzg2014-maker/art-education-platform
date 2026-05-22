@@ -3,10 +3,13 @@ import { persist } from 'zustand/middleware'
 
 function isTokenExpired(token) {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    // JWT uses base64url encoding, convert to base64 for atob
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padding = base64.length % 4 === 0 ? '' : '='.repeat(4 - (base64.length % 4))
+    const payload = JSON.parse(atob(base64 + padding))
     return payload.exp * 1000 < Date.now()
   } catch {
-    return true
+    return false
   }
 }
 

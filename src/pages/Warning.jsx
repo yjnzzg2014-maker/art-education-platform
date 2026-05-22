@@ -39,8 +39,9 @@ export default function Warning() {
 
   const filteredAnomalies = anomalies.filter(a => {
     if (filter === '全部') return true
-    if (filter === '黑色占比') return a.anomaly_reason?.includes('黑色占比') || a.anomaly_reason?.includes('深色')
-    if (filter === '主题偏离') return a.anomaly_reason?.includes('主题') || a.anomaly_reason?.includes('匹配度')
+    if (filter === '色彩独特') return a.anomaly_reason?.includes('黑色占比') || a.anomaly_reason?.includes('深色') || a.anomaly_reason?.includes('色彩')
+    if (filter === '构图独特') return a.anomaly_reason?.includes('构图')
+    if (filter === '主题独特') return a.anomaly_reason?.includes('主题') || a.anomaly_reason?.includes('匹配度')
     return true
   })
 
@@ -48,26 +49,26 @@ export default function Warning() {
   const pendingReview = anomalies.filter(a => a.is_anomaly === 1).length
   const reviewed = anomalies.filter(a => a.is_anomaly === 0).length
 
-  const anomalyTypes = ['全部', '黑色占比', '主题偏离']
+  const anomalyTypes = ['全部', '色彩独特', '构图独特', '主题独特']
 
   if (loading) return <div className="text-gray-500">加载中...</div>
 
   return (
     <div>
       <div className="mb-4">
-        <div className="text-sm text-gray-500 mb-2">异常发展预警</div>
-        <h1 className="text-xl font-bold">异常发展预警</h1>
+        <div className="text-sm text-gray-500 mb-2">多样化表达关注</div>
+        <h1 className="text-xl font-bold">多样化表达关注</h1>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <StatCard label="异常作品总数" value={totalAnomalies} unit="幅" trend="" trendType="neutral" />
-        <StatCard label="待审核" value={pendingReview} unit="幅" trend="需尽快处理" trendType="warn" />
-        <StatCard label="已审核" value={reviewed} unit="幅" trend="已转入正常队列" trendType="up" />
+        <StatCard label="关注作品总数" value={totalAnomalies} unit="幅" trend="" trendType="neutral" />
+        <StatCard label="待释义" value={pendingReview} unit="幅" trend="需教师释义" trendType="warn" />
+        <StatCard label="已释义" value={reviewed} unit="幅" trend="已转入正常队列" trendType="up" />
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="font-semibold">异常作品列表</h2>
+          <h2 className="font-semibold">值得关注的作品</h2>
           <div className="flex gap-1">
             {anomalyTypes.map(type => (
               <button
@@ -76,8 +77,9 @@ export default function Warning() {
                 className={`px-3 py-1 text-xs rounded ${filter === type ? 'bg-blue-100 text-blue-600 font-medium' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 {type} ({type === '全部' ? anomalies.length : anomalies.filter(a => {
-                  if (type === '黑色占比') return a.anomaly_reason?.includes('黑色占比') || a.anomaly_reason?.includes('深色')
-                  if (type === '主题偏离') return a.anomaly_reason?.includes('主题') || a.anomaly_reason?.includes('匹配度')
+                  if (type === '色彩独特') return a.anomaly_reason?.includes('黑色占比') || a.anomaly_reason?.includes('深色') || a.anomaly_reason?.includes('色彩')
+                  if (type === '构图独特') return a.anomaly_reason?.includes('构图')
+                  if (type === '主题独特') return a.anomaly_reason?.includes('主题') || a.anomaly_reason?.includes('匹配度')
                   return false
                 }).length})
               </button>
@@ -91,7 +93,7 @@ export default function Warning() {
               <tr className="text-left text-xs text-gray-500 uppercase">
                 <th className="px-4 py-3 font-medium">作品</th>
                 <th className="px-4 py-3 font-medium">学生信息</th>
-                <th className="px-4 py-3 font-medium">异常原因</th>
+                <th className="px-4 py-3 font-medium">关注原因</th>
                 <th className="px-4 py-3 font-medium">评分</th>
                 <th className="px-4 py-3 font-medium">状态</th>
                 <th className="px-4 py-3 font-medium">操作</th>
@@ -100,7 +102,7 @@ export default function Warning() {
             <tbody className="divide-y divide-gray-200">
               {filteredAnomalies.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">暂无异常作品</td>
+                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">暂无关注中的作品</td>
                 </tr>
               ) : (
                 filteredAnomalies.map(artwork => (
@@ -130,9 +132,9 @@ export default function Warning() {
                     </td>
                     <td className="px-4 py-3">
                       {artwork.is_anomaly === 1 ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">待审核</span>
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800">待释义</span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">已审核</span>
+                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">已释义</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -141,7 +143,7 @@ export default function Warning() {
                           onClick={() => setReviewTarget(artwork)}
                           className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                         >
-                          标记已审核
+                          填写释义
                         </button>
                       )}
                     </td>
