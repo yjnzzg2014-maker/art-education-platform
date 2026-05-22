@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "client": "npx vite --port 8050 --host 0.0.0.0",
-    "server": "PORT=8051 node server/index.js",
+    "client": "npx vite --port 8086 --host 0.0.0.0",
+    "server": "PORT=8085 node server/index.js",
     "build": "vite build",
     "preview": "vite preview",
     "test": "playwright test",
